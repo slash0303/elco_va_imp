@@ -1,2 +1,2 @@
-def get_response_process():
+def get_response_process(flag):
     pass
