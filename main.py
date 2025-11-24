@@ -16,6 +16,7 @@ from processes.llm.get_response import get_response_process
 from processes.tts.speech_synthesis import speech_synthesis_process
 from processes.management.process_loading import manage_process_loading_process
 from processes.management.state_manage import manage_state_process
+from processes.management.flag_sync import flag_sync_process
 
 # Custom lib (etc.)
 from custom_lib.eaxtension import LogE
@@ -41,10 +42,10 @@ class ProcessInfo:
             raise AttributeError(err_msg)
         
         # Flag pkg applying
-        if self.func_name == "gaze_detection_process":      # use same flag pkg
-            ProcessInfo.flag_pkg_dict[self.func_name] = ProcessInfo.flag_pkg_dict["voice_detection_process"]
-        else:
-            ProcessInfo.flag_pkg_dict[self.func_name] = flag_pkg
+        # if self.func_name == "gaze_detection_process":      # use same flag pkg
+        #     ProcessInfo.flag_pkg_dict[self.func_name] = None
+        # else:
+        ProcessInfo.flag_pkg_dict[self.func_name] = flag_pkg
 
 
 
@@ -60,6 +61,13 @@ if __name__ == "__main__":
     audio_stream_readable_flag = Event()
     vad_stream_read_flag = Event()
     vad_stream_read_flag.set()
+    stt_stream_read_flag = Event()
+    stt_stream_read_flag.set()
+
+    stream_read_flag_list = [
+        vad_stream_read_flag,
+        stt_stream_read_flag
+    ]
 
     # TODO: shm 생성
     audio_stream_shm = shared_memory.SharedMemory(create=True, 
@@ -69,14 +77,14 @@ if __name__ == "__main__":
 
     process_info_list = [
         ProcessInfo(audio_stream_process, [audio_stream_shm.name,
-                                           vad_stream_read_flag,
+                                           stream_read_flag_list,
                                            audio_stream_readable_flag]),
         ProcessInfo(voice_detection_process, [gazing_flag,
                                               audio_stream_shm.name,
                                               vad_stream_read_flag,
                                               audio_stream_readable_flag]),
         ProcessInfo(gaze_detection_process, [gazing_flag]),
-        # ProcessInfo(transcription_process, []),
+        ProcessInfo(transcription_process, []),
         # ProcessInfo(get_response_process, []),
         # ProcessInfo(speech_synthesis_process, ["1"])
     ]
@@ -114,14 +122,20 @@ if __name__ == "__main__":
                       args=(ProcessInfo.flag_pkg_dict,))
     process_list.append(process)
     process.start()
+
+    process = Process(target=flag_sync_process,
+                      args=(ProcessInfo.flag_pkg_dict,
+                            ["voice_detection_process",
+                             "gaze_detection_process"]))
+    process_list.append(process)
+    process.start()
     
     while True:
         try:
             time.sleep(1)
 
         except KeyboardInterrupt:
-            # 사용자가 Ctrl+C를 눌렀을 때 우아하게 종료
-            print("\n[Main] 종료 신호 감지! 정리 중...")
+            print("\n[Main] Terminating...")
 
             # 실행 중인 모든 프로세스 종료
             for p in process_list:

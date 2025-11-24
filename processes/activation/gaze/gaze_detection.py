@@ -22,25 +22,29 @@ def gaze_detection_process(flag_pkg: FlagPkg,
         raise RuntimeError()
 
     while True:
-        if flag_pkg.enable.is_set():
-            ret, frame = webcam.read()
-            if not ret or frame is None:
-                LogE.e(PROCESS_NAME, "frame is empty.")
-            else:
-                gaze.refresh(frame)
-
-                text = "None"
-                if gaze.is_right():
-                    text = "Looking right"
-                elif gaze.is_left():
-                    text = "Looking left"
-                elif gaze.is_center():
-                    text = "Looking center"
-                elif gaze.is_blinking():
-                    text = "blinking"
-                print(f"gaze: {text}")
-
-                if gaze.is_center() or gaze.is_blinking():  # 응시 방향 조건은 장치에서 재조정해야함.
-                    gazing_flag.set()
+        try:
+            # LogE.d("fuck", flag_pkg.enable.is_set())
+            if flag_pkg.enable.is_set():
+                ret, frame = webcam.read()
+                if not ret or frame is None:
+                    LogE.e(PROCESS_NAME, "frame is empty.")
                 else:
-                    gazing_flag.clear()
+                    gaze.refresh(frame)
+
+                    text = "None"
+                    if gaze.is_right():
+                        text = "Looking right"
+                    elif gaze.is_left():
+                        text = "Looking left"
+                    elif gaze.is_center():
+                        text = "Looking center"
+                    elif gaze.is_blinking():
+                        text = "blinking"
+                    print(f"gaze: {text}")
+
+                    if gaze.is_center() or gaze.is_blinking():  # 응시 방향 조건은 장치에서 재조정해야함.
+                        gazing_flag.set()
+                    else:
+                        gazing_flag.clear()
+        except:
+            gazing_flag.clear()

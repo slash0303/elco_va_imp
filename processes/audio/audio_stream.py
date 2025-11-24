@@ -9,7 +9,7 @@ from custom_lib.flag_pkg import FlagPkg
 
 def audio_stream_process(flag_pkg: FlagPkg,
                          audio_stream_shm_name: str,
-                         vad_stream_read_flag: EventInstance,
+                         stream_read_flag_list: list[EventInstance],
                          audio_stream_readable_flag: EventInstance):
     try:
         pa = pyaudio.PyAudio()
@@ -32,11 +32,15 @@ def audio_stream_process(flag_pkg: FlagPkg,
     flag_pkg.loading.clear()
 
     while True:
-        if vad_stream_read_flag.is_set():
+        all_read = True
+        for stream_read_flag in stream_read_flag_list:
+            all_read = all_read and stream_read_flag.is_set()
+        if all_read:
             audio_data = np.frombuffer(stream.read(gc.audio.FRAMES_PER_BUFFER),
                                         dtype=np.int16)
             np.copyto(audio_stream_buf, audio_data)
             audio_stream_readable_flag.set()
-            vad_stream_read_flag.clear()
+            for stream_read_flag in stream_read_flag_list:
+                stream_read_flag.clear()
         else:
             pass

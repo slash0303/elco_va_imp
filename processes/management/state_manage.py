@@ -48,4 +48,4 @@ def manage_state_process(flag_pkg_dict: dict[str, FlagPkg]):
             # 예외처리
             pass
 
-        # print(program_state.name, end="\r")
+        print(program_state.name, end="\r")

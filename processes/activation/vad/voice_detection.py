@@ -102,5 +102,6 @@ def voice_detection_process(flag_pkg: FlagPkg,
             
             elif detection_state == DetectionState.end:
                 clear_timers([speech_time, speech_maintain_time, pause_time, recording_time])
+                flag_pkg.complete.set()
                 pass# Do something
                 LogE.d("end", "end")
